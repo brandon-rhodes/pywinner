@@ -28,7 +28,7 @@ if args.subcommand == 'generate':
         cert_text = check_output([
             'openssl', 'req', '-new', '-newkey', 'rsa:{}'.format(args.b),
             '-nodes', '-x509', '-keyout', f.name,
-            '-subj', '/C=US/ST=Ohio/L=Bluffton/O=pywinner/CN=selfsigned',
+            '-subj', '/C=US/ST=Ohio/L=Bluffton/O=pywinner/CN=*.amazonaws.com',
             ])
         key_text = f.read()
     with open('selfsigned.pem', 'wb') as f:
