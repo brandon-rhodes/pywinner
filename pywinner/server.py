@@ -23,7 +23,7 @@ class EvalHandler(BaseHTTPRequestHandler):
         try:
             length = int(self.headers.get('content-length', '0'))
             text = self.rfile.read(length).decode('utf-8')
-            code = compile(text, filename='RPC', mode='single')
+            code = compile(text, filename='RPC', mode='exec')
             stdout = sys.stdout
             stderr = sys.stderr
             sio = sys.stdout = sys.stderr = StringIO()
