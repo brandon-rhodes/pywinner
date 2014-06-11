@@ -1,4 +1,5 @@
 import boto.ec2
+import pkg_resources
 import textwrap
 import time
 
@@ -23,8 +24,9 @@ downloads = [
     # Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 SP1
     # Microsoft Windows SDK for Windows 7 and .NET Framework 4
 
-    ('winsdk_35.exe', 'http://download.microsoft.com/download/7/A/B/7ABD2203-C472-4036-8BA0-E505528CCCB7/winsdk_web.exe'),
-    ('winsdk_40.exe', 'http://download.microsoft.com/download/A/6/A/A6AC035D-DA3F-4F0C-ADA4-37C8E5D34E3D/winsdk_web.exe'),
+    (r'\Users\Administrator\Desktop\visual-studio-2008-express.exe', 'http://go.microsoft.com/?linkid=7729279'),
+    (r'\Users\Administrator\Desktop\winsdk_35.exe', 'http://download.microsoft.com/download/7/A/B/7ABD2203-C472-4036-8BA0-E505528CCCB7/winsdk_web.exe'),
+    (r'\Users\Administrator\Desktop\winsdk_40.exe', 'http://download.microsoft.com/download/A/6/A/A6AC035D-DA3F-4F0C-ADA4-37C8E5D34E3D/winsdk_web.exe'),
 
     # Python
 
@@ -48,29 +50,9 @@ downloads = [
     # Thing needing compilation (Later: make a command line param? Or
     # have a powershell script for it right on the Windows box?)
 
-    ('source.zip', 'https://github.com/brandon-rhodes/pyephem/archive/v3.7.5.3.zip'),
+    # ('source.zip', 'https://github.com/brandon-rhodes/pyephem/archive/v3.7.5.3.zip'),
 
     ]
-
-https_server = textwrap.dedent(r"""
-    from argparse import ArgumentParser
-    from http.server import HTTPServer, BaseHTTPRequestHandler
-    from ssl import wrap_socket
-    class EvalHandler(BaseHTTPRequestHandler):
-        def do_POST(self):
-            body = b'abc\n'
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/plain')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-    parser = ArgumentParser(description='HTTPS eval() server')
-    parser.add_argument('pempath', help='path to PEM certificate+key file')
-    args = parser.parse_args()
-    h = HTTPServer(('0.0.0.0', 443), EvalHandler)
-    h.socket = wrap_socket(h.socket, certfile=args.pempath, server_side=True)
-    h.serve_forever()
-    """)
 
 def download_targets():
     for thing in downloads:
@@ -100,13 +82,27 @@ def generate_user_data():
         if filename.startswith('python-'):
             pieces = filename.replace('-', '').split('.')
             suffix = '_64' if (pieces[-2] == 'amd64') else ''
-            directory = 'C:\\{}{}{}'.format(pieces[0], pieces[1], suffix)
+            directory = r'C:\{}{}{}'.format(pieces[0], pieces[1], suffix)
             yield ('Start-Process'
                    ' -FilePath "msiexec.exe"'
                    ' -ArgumentList "/i {} /qn ALLUSERS=1 TARGETDIR={}"'
                    ' -Wait'
                    ' -Passthru'
                    .format(filename, directory))
+
+    servertext = pkg_resources.resource_string(__name__, 'server.py')
+    if '\r\n' not in servertext:
+        servertext = servertext.replace('\n', '\r\n')
+
+    yield r'$servertext = @"'
+    yield servertext
+    yield r'"@'
+    yield r'$servertext | Out-File -FilePath \server.py -Encoding ASCII'
+
+    yield (r'Start-Process'
+           r' -FilePath'
+           r' \python34\python.exe'
+           r' -ArgumentList "\server.py"')
 
     yield '</powershell>'
     return
@@ -148,5 +144,4 @@ def start_instance(user_data):
     #import pdb; pdb.set_trace()
 
 if __name__ == '__main__':
-    print(https_server)
-    #main()
+    main()
