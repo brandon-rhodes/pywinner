@@ -32,10 +32,11 @@ class EvalHandler(BaseHTTPRequestHandler):
             finally:
                 sys.stdout = stdout
                 sys.stderr = stderr
-            body = sio.getvalue()
-            self.respond(200, body)
         except Exception as e:
             self.respond(500, 'Exception: {}\n'.format(e))
+        else:
+            body = sio.getvalue()
+            self.respond(200, body)
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='HTTPS eval() server')
