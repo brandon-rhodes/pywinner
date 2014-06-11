@@ -45,7 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('pempath',
                         help='path to PEM certificate+key file')
     args = parser.parse_args()
-    h = HTTPServer(('0.0.0.0', args.p), EvalHandler)
+    h = HTTPServer(('', args.p), EvalHandler)
     h.socket = wrap_socket(h.socket, certfile=args.pempath,
                            cert_reqs=CERT_REQUIRED, ca_certs=args.pempath,
                            server_side=True)
