@@ -16,7 +16,7 @@ def generate(numbits, path):
         cert_text = check_output([
             'openssl', 'req', '-new', '-newkey', 'rsa:{}'.format(numbits),
             '-nodes', '-x509', '-keyout', f.name,
-            '-subj', '/C=US/ST=Ohio/L=Bluffton/O=pywinner/CN=*.amazonaws.com',
+            '-subj', '/C=US/ST=Ohio/L=Bluffton/O=pywinner/CN=*.compute-1.amazonaws.com',
             ])
         key_text = f.read()
     with open(path, 'wb') as f:
