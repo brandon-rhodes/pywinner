@@ -13,8 +13,8 @@ image_id = 'ami-aede32c6'
 
 def main():
     user_data = build_user_data()
-    print user_data
-    #start_instance(user_data)
+    #print user_data
+    start_instance(user_data)
 
 # The following list of URLs drives downloading and installing several
 # versions of Python plus two Windows SDKs.
@@ -94,6 +94,12 @@ def generate_user_data():
     if '\r\n' not in servertext:
         servertext = servertext.replace('\n', '\r\n')
 
+    yield r'$pemtext = @"'
+    with open('selfsigned.pem') as f:
+        yield '\r\n'.join(f.split('\n'))
+    yield r'"@'
+    yield r'$pemtext | Out-File -FilePath \selfsigned.pem -Encoding ASCII'
+
     yield r'$servertext = @"'
     yield servertext
     yield r'"@'
@@ -102,7 +108,13 @@ def generate_user_data():
     yield (r'Start-Process'
            r' -FilePath'
            r' \python34\python.exe'
-           r' -ArgumentList "\server.py"')
+           r' -ArgumentList "\server.py \selfsigned.pem"')
+
+    # Turn off Windows Firewall so we can communicate on port 1234
+
+    yield ('Set-NetFirewallProfile'
+           ' -Profile Domain,Public,Private'
+           ' -Enabled False')
 
     yield '</powershell>'
     return
@@ -131,7 +143,7 @@ def build_user_data():
 def start_instance(user_data):
     connection = boto.ec2.connect_to_region(region)
     reservation = connection.run_instances(
-        image_id, key_name='win',
+        image_id, key_name='win', security_groups=['win1234'],
         instance_type='m3.large', user_data=user_data,
         )
     instance = reservation.instances[0]
@@ -141,7 +153,7 @@ def start_instance(user_data):
         status = instance.update()
     print instance.id
     print instance.public_dns_name
-    #import pdb; pdb.set_trace()
+    instance.add_tag('Name', 'pywinner')
 
 if __name__ == '__main__':
     main()
