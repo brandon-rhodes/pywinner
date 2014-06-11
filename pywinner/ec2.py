@@ -12,9 +12,9 @@ image_id = 'ami-aede32c6'
 
 def main():
     user_data = build_user_data()
-    with open('setup.ps1', 'w') as f:
-        f.write('\r\n'.join(generate_powershell_script(include_cert=False)))
-    return
+    # with open('setup.ps1', 'w') as f:
+    #     f.write('\r\n'.join(generate_powershell_script(include_cert=False)))
+    # return
     start_instance(user_data)
 
 # The following list of URLs drives downloading and installing several
