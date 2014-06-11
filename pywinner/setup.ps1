@@ -18,10 +18,6 @@ $wc.DownloadFile("https://www.python.org/ftp/python/3.3.5/python-3.3.5.msi", "py
 $wc.DownloadFile("https://www.python.org/ftp/python/3.3.5/python-3.3.5.amd64.msi", "python-3.3.5.amd64.msi")
 $wc.DownloadFile("https://www.python.org/ftp/python/3.4.1/python-3.4.1.msi", "python-3.4.1.msi")
 $wc.DownloadFile("https://www.python.org/ftp/python/3.4.1/python-3.4.1.amd64.msi", "python-3.4.1.amd64.msi")
-$shell_app=new-object -com shell.application
-$zip_file = $shell_app.namespace((Get-Location).Path + "\source.zip")
-$destination = $shell_app.namespace((Get-Location).Path)
-$destination.Copyhere($zip_file.items())
 Start-Process -FilePath "msiexec.exe" -ArgumentList "/i python-2.5.4.msi /qn ALLUSERS=1 TARGETDIR=C:\python25" -Wait -Passthru
 Start-Process -FilePath "msiexec.exe" -ArgumentList "/i python-2.5.4.amd64.msi /qn ALLUSERS=1 TARGETDIR=C:\python25_64" -Wait -Passthru
 Start-Process -FilePath "msiexec.exe" -ArgumentList "/i python-2.6.6.msi /qn ALLUSERS=1 TARGETDIR=C:\python26" -Wait -Passthru
@@ -38,6 +34,10 @@ Start-Process -FilePath "msiexec.exe" -ArgumentList "/i python-3.3.5.msi /qn ALL
 Start-Process -FilePath "msiexec.exe" -ArgumentList "/i python-3.3.5.amd64.msi /qn ALLUSERS=1 TARGETDIR=C:\python33_64" -Wait -Passthru
 Start-Process -FilePath "msiexec.exe" -ArgumentList "/i python-3.4.1.msi /qn ALLUSERS=1 TARGETDIR=C:\python34" -Wait -Passthru
 Start-Process -FilePath "msiexec.exe" -ArgumentList "/i python-3.4.1.amd64.msi /qn ALLUSERS=1 TARGETDIR=C:\python34_64" -Wait -Passthru
+$shell_app=new-object -com shell.application
+$zip_file = $shell_app.namespace((Get-Location).Path + "\source.zip")
+$destination = $shell_app.namespace((Get-Location).Path)
+$destination.Copyhere($zip_file.items())
 $servertext = @"
 import sys
 from io import StringIO
