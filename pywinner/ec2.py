@@ -1,6 +1,5 @@
 import boto.ec2
 import pkg_resources
-import textwrap
 import time
 
 region = 'us-east-1'
@@ -13,7 +12,9 @@ image_id = 'ami-aede32c6'
 
 def main():
     user_data = build_user_data()
-    #print user_data
+    with open('setup.ps1', 'w') as f:
+        f.write('\r\n'.join(generate_powershell_script(include_cert=False)))
+    return
     start_instance(user_data)
 
 # The following list of URLs drives downloading and installing several
@@ -24,7 +25,7 @@ downloads = [
     # Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 SP1
     # Microsoft Windows SDK for Windows 7 and .NET Framework 4
 
-    (r'\Users\Administrator\Desktop\visual-studio-2008-express.exe', 'http://go.microsoft.com/?linkid=7729279'),
+    (r'\Users\Administrator\Desktop\visual_studio_2008_express.exe', 'http://go.microsoft.com/?linkid=7729279'),
     (r'\Users\Administrator\Desktop\winsdk_35.exe', 'http://download.microsoft.com/download/7/A/B/7ABD2203-C472-4036-8BA0-E505528CCCB7/winsdk_web.exe'),
     (r'\Users\Administrator\Desktop\winsdk_40.exe', 'http://download.microsoft.com/download/A/6/A/A6AC035D-DA3F-4F0C-ADA4-37C8E5D34E3D/winsdk_web.exe'),
 
@@ -63,9 +64,7 @@ def download_targets():
             filename = url.rsplit('/', 1)[-1]
         yield filename, url
 
-def generate_user_data():
-    yield '<powershell>'
-
+def generate_powershell_script(include_cert=True):
     targets = list(download_targets())
 
     yield '$wc = New-Object System.Net.WebClient'
@@ -94,11 +93,12 @@ def generate_user_data():
     if '\r\n' not in servertext:
         servertext = servertext.replace('\n', '\r\n')
 
-    yield r'$pemtext = @"'
-    with open('selfsigned.pem') as f:
-        yield '\r\n'.join(f.split('\n'))
-    yield r'"@'
-    yield r'$pemtext | Out-File -FilePath \selfsigned.pem -Encoding ASCII'
+    if include_cert:
+        yield r'$pemtext = @"'
+        with open('selfsigned.pem') as f:
+            yield '\r\n'.join(f.read().split('\n'))
+        yield r'"@'
+        yield r'$pemtext | Out-File -FilePath \selfsigned.pem -Encoding ASCII'
 
     yield r'$servertext = @"'
     yield servertext
@@ -116,29 +116,9 @@ def generate_user_data():
            ' -Profile Domain,Public,Private'
            ' -Enabled False')
 
-    yield '</powershell>'
-    return
-
-    # I guess the following commands have to be saved INSIDE a
-    # subsequent script to be run later?
-
-    yield 'bat script:'
-    yield 'set DISTUTILS_USE_SDK=1'
-    yield 'cd pyephem-3.7.5.3'
-    for sdk, version in [
-            ('v7.0', '26'), ('v7.0', '27'), ('v7.0', '33'), ('v7.1', '34')
-            ]:
-        for bits, arch in (32, 'x86'), (64, 'x64'):
-            yield (r'@call "C:\Program Files\Microsoft SDKs\Windows\{}\Bin'
-                   r'\SetEnv.Cmd" /{} /release'.format(sdk, arch))
-            c = r'C:\python{}_{}\python.exe setup.py bdist_wininst'.format(
-                version, bits)
-            if bits == 32 and version.startswith('2'):
-                c = c.replace('_32', '')  # Python installer ignores TARGETDIR?
-            yield c
-
 def build_user_data():
-    return '\r\n'.join(generate_user_data())
+    return '<powershell>\r\n{}\r\n</powershell>\r\n'.format(
+        '\r\n'.join(generate_powershell_script()))
 
 def start_instance(user_data):
     connection = boto.ec2.connect_to_region(region)
